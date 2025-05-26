@@ -1,472 +1,683 @@
 // src/pages/ProfilePage.js
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  ScrollView,
+  ActivityIndicator,
+  StyleSheet
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { sha256 } from 'js-sha256'; // For password hashing
-import Layout from '../components/layout/Layout';      // Adjust path
-import { styles } from '../styles/ProfilePageStyles';         // Adjust path
-import theme from '../styles/theme';                    // For placeholderTextColor
+import { sha256 } from 'js-sha256';
+import Layout from '../components/layout/Layout';
+// import { styles } from '../styles/ProfilePageStyles';
+import theme from '../styles/theme';
 
-// Re-define hashing function here or import from a utility
 async function hashPasswordValue(password) {
-  if (!password || typeof password !== 'string' || password.trim() === '') return null;
+  if (!password?.trim()) return null;
   return sha256(password.trim());
 }
 
 export default function ProfilePage({ navigation }) {
-  const [isLoading, setIsLoading] = useState(true); // For async data loading
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [showLogin, setShowLogin] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authMessage, setAuthMessage] = useState({ type: '', text: '' });
+  const [formErrors, setFormErrors] = useState({});
+
   const [userData, setUserData] = useState({
     name: '', phone: '', email: '', password: '', addresses: [], hashedPassword: ''
   });
+  const [loginCred, setLoginCred] = useState({ phone: '', password: '' });
   const [newAddress, setNewAddress] = useState('');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showLogin, setShowLogin] = useState(true); // Default to login form if not logged in
-  const [loginCredentials, setLoginCredentials] = useState({ phone: '', password: '' });
-  const [formErrors, setFormErrors] = useState({});
-  const [authMessage, setAuthMessage] = useState({ type: '', text: '' });
 
-  // Refs for focusing inputs
-  const inputRefs = {
-    regName: useRef(null), regPhone: useRef(null), regEmail: useRef(null), regPassword: useRef(null),
-    loginPhone: useRef(null), loginPassword: useRef(null),
-    profileName: useRef(null), profilePhone: useRef(null), profileEmail: useRef(null), profilePassword: useRef(null),
-    newAddress: useRef(null),
+  const refs = {
+    name: useRef(), phone: useRef(), email: useRef(), password: useRef(),
+    loginPhone: useRef(), loginPassword: useRef(), newAddress: useRef()
   };
-  const [focusedInput, setFocusedInput] = useState(null); // For focus styling
+  const [focused, setFocused] = useState(null);
 
+  // Load stored user/auth state
   useEffect(() => {
-    const loadInitialData = async () => {
-      setIsLoading(true);
+    (async () => {
       try {
-        const loggedInStatus = await AsyncStorage.getItem('isUserLoggedIn') === 'true';
-        setIsLoggedIn(loggedInStatus);
-        if (loggedInStatus) {
-          const storedUserDataJSON = await AsyncStorage.getItem('userData');
-          if (storedUserDataJSON) {
-            const parsedData = JSON.parse(storedUserDataJSON);
-            setUserData(prev => ({ ...prev, ...parsedData, password: '' })); // Clear password field
-          } else { // Data missing, log out
-            await AsyncStorage.setItem('isUserLoggedIn', 'false');
-            setIsLoggedIn(false);
+        const logged = (await AsyncStorage.getItem('isUserLoggedIn')) === 'true';
+        setIsLoggedIn(logged);
+        setShowLogin(!logged);
+        if (logged) {
+          const stored = await AsyncStorage.getItem('userData');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            setUserData({ ...parsed, password: '' });
           }
-          setShowLogin(false); // If logged in, don't show login form initially
-        } else {
-          setShowLogin(true); // If not logged in, show login form
         }
-      } catch (error) {
-        console.error("Error loading initial data:", error);
-        setAuthMessage({ type: 'error', text: 'Помилка завантаження даних.'});
+      } catch (e) {
+        console.error(e);
+        setAuthMessage({ type: 'error', text: 'Помилка завантаження даних.' });
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    };
-    loadInitialData();
+    })();
   }, []);
 
-  const persistUserData = async (currentData) => {
-    let dataToStore = { ...currentData };
-    if (currentData.password && currentData.password.trim() !== '') {
-      const hashedPassword = await hashPasswordValue(currentData.password.trim());
-      dataToStore.hashedPassword = hashedPassword;
-    }
-    delete dataToStore.password;
-    setUserData(prev => ({ ...prev, ...dataToStore, password: '' }));
-    await AsyncStorage.setItem('userData', JSON.stringify(dataToStore));
-  };
-
-  const validateField = (name, value, currentPassword = '') => {
-    let error = '';
-    // ... (validation logic from your web version can be largely reused here) ...
-    // Example for name:
+  const validateField = (name, val) => {
+    let err = '';
     if (name === 'name') {
-        if (!value.trim()) error = "Ім'я є обов'язковим.";
-        else if (value.trim().length < 2) error = "Ім'я має містити принаймні 2 символи.";
-        else if (!/^[a-zA-Zа-яА-ЯіІїЇєЄґҐ'-\s]+$/.test(value)) error = "Некоректні символи в імені.";
-    } else if (name === 'phone') {
-        const cleanedPhone = value.replace(/[^\d+]/g, '');
-        if (!cleanedPhone) error = "Телефон є обов'язковим.";
-        else if (!/^(?:\+380\d{9}|0\d{9})$/.test(cleanedPhone)) error = 'Некоректний формат телефону.';
-    } else if (name === 'email') {
-        if (value.trim() && !/\S+@\S+\.\S+/.test(value.trim())) error = "Некоректний формат email.";
-    } else if (name === 'password') {
-        if (!value.trim()) error = "Пароль є обов'язковим.";
-        else if (value.trim().length < 4) error = "Пароль має містити принаймні 4 символи.";
-    } else if (name === 'newAddress') {
-        if (!value.trim()) error = "Адреса не може бути порожньою.";
-        else if (value.trim().length < 5) error = "Адреса має бути довшою.";
+      if (!val.trim()) err = "Ім'я є обов'язковим.";
+      else if (val.trim().length < 2) err = 'Мінімум 2 символи.';
     }
-    return error;
-  };
-
-  const createChangeHandler = (setter, formPrefix = '', fieldName) => (text) => {
-    setter(prev => ({ ...prev, [fieldName]: text }));
-    const errorKey = formPrefix ? `${formPrefix}.${fieldName}` : fieldName;
-    if (formErrors[errorKey]) {
-      setFormErrors(prev => ({ ...prev, [errorKey]: '' }));
+    if (name === 'phone') {
+      const clean = val.replace(/[^\d+]/g, '');
+      if (!clean) err = 'Телефон обов’язковий.';
+      else if (!/^(?:\+380\d{9}|0\d{9})$/.test(clean))
+        err = 'Невірний формат.';
     }
-    setAuthMessage({ type: '', text: '' });
+    if (name === 'email' && val.trim() && !/\S+@\S+\.\S+/.test(val))
+      err = 'Невірний email.';
+    if (name === 'password' && isEditing && val && val.trim().length < 4)
+      err = 'Мінімум 4 символи.';
+    if (name === 'newAddress') {
+      if (!val.trim()) err = 'Адреса не може бути порожньою.';
+      else if (val.trim().length < 5) err = 'Мінімум 5 символів.';
+    }
+    return err;
   };
 
-  const createBlurHandler = (dataSource, formPrefix = '', fieldName) => () => {
-    setFocusedInput(null);
-    const error = validateField(fieldName, dataSource[fieldName], dataSource.password);
-    const errorKey = formPrefix ? `${formPrefix}.${fieldName}` : fieldName;
-    setFormErrors(prev => ({ ...prev, [errorKey]: error }));
-  };
-
-  // Specific handlers
-  const handleChangeUserData = (fieldName) => createChangeHandler(setUserData, 'userData', fieldName);
-  const handleBlurUserData = (fieldName) => createBlurHandler(userData, 'userData', fieldName);
-  const handleChangeLogin = (fieldName) => createChangeHandler(setLoginCredentials, 'login', fieldName);
-  const handleBlurLogin = (fieldName) => createBlurHandler(loginCredentials, 'login', fieldName);
-
-  const handleChangeNewAddress = (text) => {
-    setNewAddress(text);
-    if (formErrors.newAddress) setFormErrors(prev => ({...prev, newAddress: ''}));
-  };
-  const handleBlurNewAddress = () => {
-    handleBlur('newAddressInput'); // To remove focus style
-    setFormErrors(prev => ({...prev, newAddress: validateField('newAddress', newAddress)}));
-  };
-
-  const runValidation = (fields, data, prefix = '') => {
-    const errors = {};
-    let isValid = true;
-    fields.forEach(field => {
-      const error = validateField(field, data[field] || '', data.password);
-      if (error) {
-        errors[prefix ? `${prefix}.${field}` : field] = error;
-        isValid = false;
+  const runValidation = (fields, data, prefix='') => {
+    const errs = {};
+    let ok = true;
+    fields.forEach(f => {
+      const e = validateField(f, data[f] || '');
+      if (e) {
+        errs[prefix ? `${prefix}.${f}` : f] = e;
+        ok = false;
       }
     });
-    setFormErrors(prev => ({ ...prev, ...errors }));
-    return isValid;
+    setFormErrors(prev => ({ ...prev, ...errs }));
+    return ok;
   };
 
   const handleRegister = async () => {
-    setAuthMessage({ type: '', text: '' });
-    const fields = ['name', 'phone', 'password'];
-    if (userData.email && userData.email.trim()) fields.push('email');
-
-    if (!runValidation(fields, userData, 'userData')) return;
-
+    setAuthMessage({});
+    const fields=['name','phone','password'];
+    if (userData.email.trim()) fields.push('email');
+    if (!runValidation(fields, userData)) return;
+    setIsLoading(true);
     try {
-        setIsLoading(true);
-        await persistUserData(userData);
-        await AsyncStorage.setItem('isUserLoggedIn', 'true');
-        setIsLoggedIn(true);
-        setShowLogin(false);
-        setAuthMessage({ type: 'success', text: 'Реєстрація успішна! Вас автоматично авторизовано.' });
-    } catch (error) {
-        console.error("Registration error:", error);
-        setAuthMessage({ type: 'error', text: 'Помилка реєстрації.' });
+      const toStore = { ...userData };
+      if (userData.password) {
+        toStore.hashedPassword = await hashPasswordValue(userData.password);
+      }
+      delete toStore.password;
+      await AsyncStorage.setItem('userData', JSON.stringify(toStore));
+      await AsyncStorage.setItem('isUserLoggedIn','true');
+      setUserData(toStore);
+      setIsLoggedIn(true);
+      setShowLogin(false);
+      setAuthMessage({ type:'success', text:'Реєстрація успішна!' });
+    } catch {
+      setAuthMessage({ type:'error', text:'Помилка реєстрації.' });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleLogin = async () => {
-    setAuthMessage({ type: '', text: '' });
-    if (!runValidation(['phone', 'password'], loginCredentials, 'login')) return;
-
+    setAuthMessage({});
+    if (!runValidation(['phone','password'], loginCred, 'login')) return;
     setIsLoading(true);
     try {
-        const storedUserDataJSON = await AsyncStorage.getItem('userData');
-        if (storedUserDataJSON) {
-            const parsedStoredData = JSON.parse(storedUserDataJSON);
-            if (!parsedStoredData.hashedPassword) {
-                setAuthMessage({ type: 'error', text: 'Помилка даних. Будь ласка, зареєструйтесь знову.' });
-                setIsLoading(false);
-                return;
-            }
-            const hashedPasswordAttempt = await hashPasswordValue(loginCredentials.password.trim());
-            if (parsedStoredData.phone === loginCredentials.phone.trim() && parsedStoredData.hashedPassword === hashedPasswordAttempt) {
-                setUserData({ ...parsedStoredData, password: '' });
-                await AsyncStorage.setItem('isUserLoggedIn', 'true');
-                setIsLoggedIn(true);
-                setShowLogin(false);
-                setLoginCredentials({ phone: '', password: '' });
-                setFormErrors({});
-                // Optionally, success message for login: setAuthMessage({ type: 'success', text: 'Вхід успішний!' });
-            } else {
-                setAuthMessage({ type: 'error', text: 'Неправильний телефон або пароль.' });
-            }
+      const stored = await AsyncStorage.getItem('userData');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const attempt = await hashPasswordValue(loginCred.password);
+        if (parsed.phone === loginCred.phone.trim() && parsed.hashedPassword === attempt) {
+          setUserData(parsed);
+          await AsyncStorage.setItem('isUserLoggedIn','true');
+          setIsLoggedIn(true);
+          setShowLogin(false);
+          setLoginCred({ phone:'', password:'' });
+          setFormErrors({});
+          setAuthMessage({ type:'success', text:'Логін успішний!' });
         } else {
-            setAuthMessage({ type: 'error', text: 'Користувача не знайдено. Будь ласка, зареєструйтесь.' });
+          setAuthMessage({ type:'error', text:'Невірні дані.' });
         }
-    } catch (error) {
-        console.error("Login error:", error);
-        setAuthMessage({ type: 'error', text: 'Помилка входу.' });
+      } else {
+        setAuthMessage({ type:'error', text:'Користувача не знайдено.' });
+      }
+    } catch {
+      setAuthMessage({ type:'error', text:'Помилка входу.' });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const handleProfileSave = async () => {
-    setAuthMessage({ type: '', text: '' });
-    const fieldsToValidate = ['name', 'phone'];
-    if (userData.email && userData.email.trim()) fieldsToValidate.push('email');
-    if (userData.password && userData.password.trim()) fieldsToValidate.push('password');
-
-    if (!runValidation(fieldsToValidate, userData, 'userData')) return;
-
+  const handleSaveProfile = async () => {
+    setAuthMessage({});
+    const fields=['name','phone'];
+    if (userData.email.trim()) fields.push('email');
+    if (userData.password) fields.push('password');
+    if (!runValidation(fields, userData)) return;
     setIsLoading(true);
     try {
-        await persistUserData(userData);
-        setIsEditing(false);
-        setAuthMessage({ type: 'success', text: 'Профіль успішно оновлено.' });
-    } catch (error) {
-        console.error("Profile save error:", error);
-        setAuthMessage({ type: 'error', text: 'Помилка збереження профілю.' });
+      const toStore = { ...userData };
+      if (userData.password) {
+        toStore.hashedPassword = await hashPasswordValue(userData.password);
+      }
+      delete toStore.password;
+      await AsyncStorage.setItem('userData', JSON.stringify(toStore));
+      setUserData(toStore);
+      setIsEditing(false);
+      setAuthMessage({ type:'success', text:'Профіль оновлено.' });
+    } catch {
+      setAuthMessage({ type:'error', text:'Помилка збереження.' });
     } finally {
-        setIsLoading(false);
-    }
-  };
-
-  const toggleEditAndSave = () => {
-    setAuthMessage({ type: '', text: '' });
-    if (isEditing) {
-      handleProfileSave();
-    } else {
-      setUserData(prev => ({ ...prev, password: '' })); // Clear password field when entering edit mode
-      setIsEditing(true);
-    }
-  };
-
-  const saveAddress = async () => {
-    setAuthMessage({ type: '', text: '' });
-    if (!runValidation(['newAddress'], { newAddress })) return;
-
-    setIsLoading(true);
-    try {
-        const updatedAddresses = [...(userData.addresses || []), newAddress.trim()];
-        // Persist the whole userData object including the new addresses array
-        await persistUserData({ ...userData, addresses: updatedAddresses });
-        setNewAddress('');
-        setFormErrors(prev => ({ ...prev, newAddress: '' })); // Clear specific error
-        setAuthMessage({ type: 'success', text: 'Адресу додано.' });
-    } catch (error) {
-        console.error("Save address error:", error);
-        setAuthMessage({ type: 'error', text: 'Помилка додавання адреси.' });
-    } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleLogout = async () => {
     setIsLoading(true);
     try {
-        await AsyncStorage.setItem('isUserLoggedIn', 'false');
-        // Optionally clear userData from AsyncStorage too, or keep it for next login hint
-        // await AsyncStorage.removeItem('userData');
-        setIsLoggedIn(false);
-        setShowLogin(true);
-        setUserData({ name: '', phone: '', email: '', password: '', addresses: [], hashedPassword: '' });
-        setLoginCredentials({ phone: '', password: '' });
-        setFormErrors({});
-        setAuthMessage({ type: '', text: '' });
-    } catch (error) {
-        console.error("Logout error:", error);
-        setAuthMessage({ type: 'error', text: 'Помилка виходу.' });
+      await AsyncStorage.setItem('isUserLoggedIn','false');
+      setIsLoggedIn(false);
+      setShowLogin(true);
+      setUserData({ name:'', phone:'', email:'', password:'', addresses:[], hashedPassword:'' });
+      setAuthMessage({});
+      setFormErrors({});
+    } catch {
+      setAuthMessage({ type:'error', text:'Помилка виходу.' });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
-  const renderAuthMessage = () => {
-    if (!authMessage.text) return null;
-    const messageContainerStyle = authMessage.type === 'success'
-      ? [styles.authMessageContainer, styles.authMessageSuccess]
-      : [styles.authMessageContainer, styles.authMessageError];
-    const messageTextStyle = authMessage.type === 'success'
-      ? [styles.authMessageText, styles.authMessageTextSuccess]
-      : [styles.authMessageText, styles.authMessageTextError];
-
-    return (
-      <View style={messageContainerStyle} accessibilityRole="alert">
-        <Text style={messageTextStyle}>{authMessage.text}</Text>
-      </View>
-    );
+  const addAddress = async () => {
+    if (!runValidation(['newAddress'], { newAddress })) return;
+    setIsLoading(true);
+    try {
+      const updated = [...(userData.addresses||[]), newAddress.trim()];
+      const toStore = { ...userData, addresses: updated };
+      await AsyncStorage.setItem('userData', JSON.stringify(toStore));
+      setUserData(toStore);
+      setNewAddress('');
+      setFormErrors(prev => ({ ...prev, newAddress: '' }));
+      setAuthMessage({ type:'success', text:'Адресу додано.' });
+    } catch {
+      setAuthMessage({ type:'error', text:'Помилка додавання.' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const getInputStyle = (fieldName, prefix = '') => {
-    const errorKey = prefix ? `${prefix}.${fieldName}` : fieldName;
-    const baseFocusedInputName = prefix ? `${prefix}${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}` : fieldName;
-
-    return [
-      styles.input,
-      formErrors[errorKey] ? styles.inputError : null,
-      focusedInput === baseFocusedInputName ? (formErrors[errorKey] ? styles.inputErrorFocused : styles.inputFocused) : null,
-    ];
-  };
-
-  const renderTextInput = (fieldConfig) => {
-    const { label, fieldName, placeholder, keyboardType = 'default', secureTextEntry = false, state, handler, blurHandler, errorPrefix = '', refKey, isRequired = false } = fieldConfig;
-    const errorKey = errorPrefix ? `${errorPrefix}.${fieldName}` : fieldName;
-    const baseFocusedInputName = errorPrefix ? `${errorPrefix}${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)}` : fieldName;
-
+  if (isLoading && !isLoggedIn && !authMessage.text) {
     return (
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>{label}{isRequired ? '*' : ''}</Text>
-        <TextInput
-          ref={inputRefs[refKey]}
-          style={getInputStyle(fieldName, errorPrefix)}
-          value={state[fieldName]}
-          onChangeText={handler(fieldName)}
-          onBlur={blurHandler(fieldName)}
-          onFocus={() => setFocusedInput(baseFocusedInputName)}
-          placeholder={placeholder}
-          placeholderTextColor={theme.colors.textSecondary}
-          secureTextEntry={secureTextEntry}
-          keyboardType={keyboardType}
-          accessibilityLabel={label}
-          accessibilityInvalid={!!formErrors[errorKey]}
-        />
-        {formErrors[errorKey] && <Text style={styles.errorMessage} accessibilityLiveRegion="polite">{formErrors[errorKey]}</Text>}
-      </View>
-    );
-  };
-
-
-  const renderRegistrationForm = () => (
-    <View style={styles.formSection}>
-      <Text style={styles.sectionTitle}>Створити обліковий запис</Text>
-      {renderAuthMessage()}
-      {renderTextInput({ label: "Ім'я", fieldName: "name", placeholder: "Ваше ім'я", state: userData, handler: handleChangeUserData, blurHandler: handleBlurUserData, errorPrefix: 'userData', refKey: 'regName', isRequired: true })}
-      {renderTextInput({ label: "Телефон", fieldName: "phone", placeholder: "+380XXXYYYZZZ", keyboardType: "phone-pad", state: userData, handler: handleChangeUserData, blurHandler: handleBlurUserData, errorPrefix: 'userData', refKey: 'regPhone', isRequired: true })}
-      {renderTextInput({ label: "Email (не обов'язково)", fieldName: "email", placeholder: "example@mail.com", keyboardType: "email-address", state: userData, handler: handleChangeUserData, blurHandler: handleBlurUserData, errorPrefix: 'userData', refKey: 'regEmail' })}
-      {renderTextInput({ label: "Пароль", fieldName: "password", placeholder: "Мін. 4 символи", secureTextEntry: true, state: userData, handler: handleChangeUserData, blurHandler: handleBlurUserData, errorPrefix: 'userData', refKey: 'regPassword', isRequired: true })}
-
-      <Pressable onPress={handleRegister} style={({pressed}) => [styles.buttonBase, styles.buttonPrimary, styles.formSectionButton, pressed && styles.buttonPrimaryPressed]} disabled={isLoading}>
-        {isLoading ? <ActivityIndicator color={theme.colors.textOnAccentSoft} /> : <Text style={[styles.buttonTextBase, styles.buttonTextPrimary, styles.formSectionButtonText]}>Зареєструватися</Text>}
-      </Pressable>
-      <Text style={styles.formToggleText}>
-        Вже маєте акаунт?{' '}
-        <Pressable onPress={() => { setShowLogin(true); setFormErrors({}); setAuthMessage({type:'', text:''}); }}>
-          {({pressed}) => <Text style={[styles.formLinkButtonText, pressed && styles.formLinkButtonTextPressed]}>Увійти</Text>}
-        </Pressable>
-      </Text>
-    </View>
-  );
-
-  const renderLoginForm = () => (
-    <View style={styles.formSection}>
-      <Text style={styles.sectionTitle}>Увійти</Text>
-      {renderAuthMessage()}
-      {renderTextInput({ label: "Телефон", fieldName: "phone", placeholder: "+380XXXYYYZZZ", keyboardType: "phone-pad", state: loginCredentials, handler: handleChangeLogin, blurHandler: handleBlurLogin, errorPrefix: 'login', refKey: 'loginPhone', isRequired: true })}
-      {renderTextInput({ label: "Пароль", fieldName: "password", placeholder: "Ваш пароль", secureTextEntry: true, state: loginCredentials, handler: handleChangeLogin, blurHandler: handleBlurLogin, errorPrefix: 'login', refKey: 'loginPassword', isRequired: true })}
-
-      <Pressable onPress={handleLogin} style={({pressed}) => [styles.buttonBase, styles.buttonPrimary, styles.formSectionButton, pressed && styles.buttonPrimaryPressed]} disabled={isLoading}>
-         {isLoading ? <ActivityIndicator color={theme.colors.textOnAccentSoft} /> : <Text style={[styles.buttonTextBase, styles.buttonTextPrimary, styles.formSectionButtonText]}>Увійти</Text>}
-      </Pressable>
-      <Text style={styles.formToggleText}>
-        Немає акаунту?{' '}
-        <Pressable onPress={() => { setShowLogin(false); setFormErrors({}); setAuthMessage({type:'', text:''}); }}>
-           {({pressed}) => <Text style={[styles.formLinkButtonText, pressed && styles.formLinkButtonTextPressed]}>Зареєструватися</Text>}
-        </Pressable>
-      </Text>
-    </View>
-  );
-
-  const renderProfileForm = () => (
-    <View style={styles.formSection}>
-      <Text style={styles.profilePageTitle}>Профіль користувача</Text>
-      {renderAuthMessage()}
-      <View style={styles.profileInfoGroup}>
-        {/* Name */}
-        <View style={styles.profileInfoItem}>
-          <Text style={styles.profileInfoLabel}>Ім’я:</Text>
-          {isEditing ? (
-            <TextInput ref={inputRefs.profileName} style={[styles.input, styles.inputInline, getInputStyle('name', 'userData')]} value={userData.name} onChangeText={handleChangeUserData('name')} onBlur={handleBlurUserData('name')} onFocus={() => setFocusedInput('userDataName')} />
-          ) : ( <Text style={styles.profileInfoValue}>{userData.name}</Text> )}
+      <Layout currentRouteName="Profile">
+        <View style={sty.loader}>
+          <ActivityIndicator size="large" color={theme.colors.accentPrimary} />
         </View>
-        {isEditing && formErrors['userData.name'] && <Text style={[styles.errorMessage, styles.errorMessageInline]}>{formErrors['userData.name']}</Text>}
-
-        {/* Phone */}
-        <View style={styles.profileInfoItem}>
-          <Text style={styles.profileInfoLabel}>Телефон:</Text>
-          {isEditing ? (
-            <TextInput ref={inputRefs.profilePhone} style={[styles.input, styles.inputInline, getInputStyle('phone', 'userData')]} value={userData.phone} onChangeText={handleChangeUserData('phone')} onBlur={handleBlurUserData('phone')} onFocus={() => setFocusedInput('userDataPhone')} keyboardType="phone-pad"/>
-          ) : ( <Text style={styles.profileInfoValue}>{userData.phone}</Text> )}
-        </View>
-         {isEditing && formErrors['userData.phone'] && <Text style={[styles.errorMessage, styles.errorMessageInline]}>{formErrors['userData.phone']}</Text>}
-
-        {/* Email */}
-        <View style={styles.profileInfoItem}>
-          <Text style={styles.profileInfoLabel}>Email:</Text>
-          {isEditing ? (
-            <TextInput ref={inputRefs.profileEmail} style={[styles.input, styles.inputInline, getInputStyle('email', 'userData')]} value={userData.email} onChangeText={handleChangeUserData('email')} onBlur={handleBlurUserData('email')} onFocus={() => setFocusedInput('userDataEmail')} keyboardType="email-address"/>
-          ) : ( <Text style={styles.profileInfoValue}>{userData.email || 'Не вказано'}</Text> )}
-        </View>
-        {isEditing && formErrors['userData.email'] && <Text style={[styles.errorMessage, styles.errorMessageInline]}>{formErrors['userData.email']}</Text>}
-
-        {/* New Password (only in edit mode) */}
-        {isEditing && (
-          <>
-            <View style={styles.profileInfoItem}>
-              <Text style={styles.profileInfoLabel}>Новий пароль:</Text>
-              <TextInput ref={inputRefs.profilePassword} style={[styles.input, styles.inputInline, getInputStyle('password', 'userData')]} value={userData.password} onChangeText={handleChangeUserData('password')} onBlur={handleBlurUserData('password')} onFocus={() => setFocusedInput('userDataPassword')} placeholder="Залиште порожнім, щоб не змінювати" secureTextEntry />
-            </View>
-            {formErrors['userData.password'] && <Text style={[styles.errorMessage, styles.errorMessageInline]}>{formErrors['userData.password']}</Text>}
-          </>
-        )}
-      </View>
-
-      <View style={styles.profileActionsContainer}>
-        <Pressable onPress={toggleEditAndSave} style={({pressed}) => [styles.buttonBase, styles.buttonPrimary, styles.profileActionButton, pressed && styles.buttonPrimaryPressed]} disabled={isLoading}>
-          {isLoading && isEditing ? <ActivityIndicator color={theme.colors.textOnAccentSoft}/> : <Text style={[styles.buttonTextBase, styles.buttonTextPrimary]}>{isEditing ? 'Зберегти зміни' : 'Редагувати профіль'}</Text>}
-        </Pressable>
-        {isEditing && (
-          <Pressable onPress={async () => { setIsEditing(false); const stored = await AsyncStorage.getItem('userData'); if (stored) setUserData(prev => ({ ...prev, ...JSON.parse(stored), password: ''})); setFormErrors({}); setAuthMessage({type:'', text:''}); }} style={({pressed}) => [styles.buttonBase, styles.buttonSecondary, styles.profileActionButton, pressed && styles.buttonSecondaryPressed]} disabled={isLoading}>
-             <Text style={[styles.buttonTextBase, styles.buttonTextSecondary]}>Скасувати</Text>
-          </Pressable>
-        )}
-      </View>
-
-      <Text style={styles.addressesTitle}>Адреси</Text>
-      <View style={styles.addressListContainer}>
-        {(userData.addresses && userData.addresses.length > 0) ? (
-          <View style={styles.addressListItemsContainer}>
-            {userData.addresses.map((address, index) => (
-              <View key={index} style={styles.addressListItem}><Text style={styles.addressListItemText}>{address}</Text></View>
-            ))}
-          </View>
-        ) : <Text style={styles.addressListNoItemsText}>У вас ще немає збережених адрес.</Text>}
-      </View>
-
-      <View style={[styles.formGroup, styles.addAddressFormContainer]}>
-        <Text style={styles.label}>Додати нову адресу:</Text>
-        <TextInput ref={inputRefs.newAddress} style={getInputStyle('newAddress')} value={newAddress} onChangeText={handleChangeNewAddress} onBlur={handleBlurNewAddress} onFocus={() => setFocusedInput('newAddressInput')} placeholder="Введіть нову адресу" />
-        {formErrors.newAddress && <Text style={styles.errorMessage}>{formErrors.newAddress}</Text>}
-        <Pressable onPress={saveAddress} style={({pressed}) => [styles.buttonBase, styles.buttonSecondary, styles.addAddressButton, pressed && styles.buttonSecondaryPressed]} disabled={isLoading}>
-          {isLoading ? <ActivityIndicator color={theme.colors.textSecondary}/> : <Text style={[styles.buttonTextBase, styles.buttonTextSecondary]}>Додати адресу</Text>}
-        </Pressable>
-      </View>
-
-      <View style={styles.separator} />
-      <Pressable onPress={handleLogout} style={({pressed}) => [styles.buttonBase, styles.buttonDanger, styles.logoutButton, pressed && styles.buttonDangerPressed]} disabled={isLoading}>
-        {isLoading ? <ActivityIndicator color={theme.colors.textOnDangerSoft}/> : <Text style={[styles.buttonTextBase, styles.buttonTextDanger]}>Вийти</Text>}
-      </Pressable>
-    </View>
-  );
-
-  if (isLoading && !isLoggedIn && !authMessage.text) { // Initial loading state
-    return (
-        <Layout currentRouteName="Profile">
-            <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-                <ActivityIndicator size="large" color={theme.colors.accentPrimary} />
-            </View>
-        </Layout>
+      </Layout>
     );
   }
 
+  const renderAuthMessage = () => {
+    if (!authMessage.text) return null;
+    const boxStyle = authMessage.type==='success'? sty.msgSuccess: sty.msgError;
+    const txtStyle = authMessage.type==='success'? sty.msgTextSuccess: sty.msgTextError;
+    return <View style={[sty.msgBox,boxStyle]}><Text style={[sty.msgText,txtStyle]}>{authMessage.text}</Text></View>;
+  };
+
+  const renderTextInput = ({ label, value, onChange, onBlur, onFocus, placeholder, secure=false, keyboardType='default', refKey, errorKey }) => (
+    <View style={sty.group}>
+      <Text style={sty.label}>{label}</Text>
+      <TextInput
+        ref={refs[refKey]}
+        style={[
+          sty.input,
+          formErrors[errorKey] && sty.inputError,
+          focused===refKey && sty.inputFocused
+        ]}
+        value={value}
+        onChangeText={onChange}
+        onBlur={onBlur}
+        onFocus={()=>setFocused(refKey)}
+        placeholder={placeholder}
+        placeholderTextColor={theme.colors.textSecondary}
+        secureTextEntry={secure}
+        keyboardType={keyboardType}
+      />
+      {!!formErrors[errorKey] && <Text style={sty.errorText}>{formErrors[errorKey]}</Text>}
+    </View>
+  );
+
+  const renderRegistration = () => (
+    <View>
+      <Text style={sty.heading}>Реєстрація</Text>
+      {renderAuthMessage()}
+      {renderTextInput({
+        label:"Ім'я*", value:userData.name, refKey:'name',
+        onChange:text=>setUserData(prev=>({...prev,name:text})),
+        onBlur:()=>setFormErrors(prev=>({...prev,name:validateField('name',userData.name)})),
+        onFocus:()=>setFocused('name'),
+        placeholder:"Ваше ім'я", errorKey:'name'
+      })}
+      {renderTextInput({
+        label:"Телефон*", value:userData.phone, refKey:'phone',
+        onChange:text=>setUserData(prev=>({...prev,phone:text})),
+        onBlur:()=>setFormErrors(prev=>({...prev,phone:validateField('phone',userData.phone)})),
+        onFocus:()=>setFocused('phone'),
+        placeholder:"+380XXXXXXXXX", keyboardType:'phone-pad', errorKey:'phone'
+      })}
+      {renderTextInput({
+        label:"Email", value:userData.email, refKey:'email',
+        onChange:text=>setUserData(prev=>({...prev,email:text})),
+        onBlur:()=>setFormErrors(prev=>({...prev,email:validateField('email',userData.email)})),
+        onFocus:()=>setFocused('email'),
+        placeholder:"example@mail.com", keyboardType:'email-address', errorKey:'email'
+      })}
+      {renderTextInput({
+        label:"Пароль*", value:userData.password, refKey:'password',
+        onChange:text=>setUserData(prev=>({...prev,password:text})),
+        onBlur:()=>setFormErrors(prev=>({...prev,password:validateField('password',userData.password)})),
+        onFocus:()=>setFocused('password'),
+        placeholder:"Мін. 4 символи", secure:true, errorKey:'password'
+      })}
+      <Pressable style={({pressed})=>[sty.btn,sty.btnPrimary, pressed&&sty.btnPrimaryPressed]} onPress={handleRegister} disabled={isLoading}>
+        {isLoading ? <ActivityIndicator color="#fff"/> : <Text style={sty.btnText}>Зареєструватися</Text>}
+      </Pressable>
+      <Pressable onPress={()=>{ setShowLogin(true); setFormErrors({}); setAuthMessage({}); }} style={sty.linkToggle}>
+        <Text style={sty.linkText}>Уже є акаунт? Увійти</Text>
+      </Pressable>
+    </View>
+  );
+
+  const renderLogin = () => (
+    <View>
+      <Text style={sty.heading}>Увійти</Text>
+      {renderAuthMessage()}
+      {renderTextInput({
+        label:"Телефон*", value:loginCred.phone, refKey:'loginPhone',
+        onChange:text=>setLoginCred(prev=>({...prev,phone:text})),
+        onBlur:()=>setFormErrors(prev=>({...prev,'login.phone':validateField('phone',loginCred.phone)})),
+        onFocus:()=>setFocused('loginPhone'),
+        placeholder:"+380XXXXXXXXX", keyboardType:'phone-pad', errorKey:'login.phone'
+      })}
+      {renderTextInput({
+        label:"Пароль*", value:loginCred.password, refKey:'loginPassword',
+        onChange:text=>setLoginCred(prev=>({...prev,password:text})),
+        onBlur:()=>setFormErrors(prev=>({...prev,'login.password':validateField('password',loginCred.password)})),
+        onFocus:()=>setFocused('loginPassword'),
+        placeholder:"Ваш пароль", secure:true, errorKey:'login.password'
+      })}
+      <Pressable style={({pressed})=>[sty.btn,sty.btnPrimary, pressed&&sty.btnPrimaryPressed]} onPress={handleLogin} disabled={isLoading}>
+        {isLoading ? <ActivityIndicator color="#fff"/> : <Text style={sty.btnText}>Увійти</Text>}
+      </Pressable>
+      <Pressable onPress={()=>{ setShowLogin(false); setFormErrors({}); setAuthMessage({}); }} style={sty.linkToggle}>
+        <Text style={sty.linkText}>Немає акаунту? Зареєструватися</Text>
+      </Pressable>
+    </View>
+  );
+
+const renderProfile = () => (
+      <View>
+        <Text style={sty.heading}>Мій профіль</Text>
+        {renderAuthMessage()}
+
+        {/* Name */}
+        <View style={sty.row}>
+          <Text style={sty.label}>Ім'я:</Text>
+          {isEditing ? (
+            <TextInput
+              ref={refs.name}
+              style={[
+                sty.inputInline,
+                formErrors['userData.name'] && sty.inputError
+              ]}
+              value={userData.name}
+              onChangeText={t =>
+                setUserData(prev => ({ ...prev, name: t }))
+              }
+            />
+          ) : (
+            <Text style={sty.value}>{userData.name}</Text>
+          )}
+        </View>
+        {!!formErrors['userData.name'] && (
+          <Text style={sty.errorInline}>
+            {formErrors['userData.name']}
+          </Text>
+        )}
+
+        {/* Phone */}
+        <View style={sty.row}>
+          <Text style={sty.label}>Телефон:</Text>
+          {isEditing ? (
+            <TextInput
+              ref={refs.phone}
+              style={[
+                sty.inputInline,
+                formErrors['userData.phone'] && sty.inputError
+              ]}
+              value={userData.phone}
+              onChangeText={t =>
+                setUserData(prev => ({ ...prev, phone: t }))
+              }
+              keyboardType="phone-pad"
+            />
+          ) : (
+            <Text style={sty.value}>{userData.phone}</Text>
+          )}
+        </View>
+        {!!formErrors['userData.phone'] && (
+          <Text style={sty.errorInline}>
+            {formErrors['userData.phone']}
+          </Text>
+        )}
+
+        {/* Email */}
+        <View style={sty.row}>
+          <Text style={sty.label}>Email:</Text>
+          {isEditing ? (
+            <TextInput
+              ref={refs.email}
+              style={[
+                sty.inputInline,
+                formErrors['userData.email'] && sty.inputError
+              ]}
+              value={userData.email}
+              onChangeText={t =>
+                setUserData(prev => ({ ...prev, email: t }))
+              }
+              keyboardType="email-address"
+            />
+          ) : (
+            <Text style={sty.value}>
+              {userData.email || 'Не вказано'}
+            </Text>
+          )}
+        </View>
+        {!!formErrors['userData.email'] && (
+          <Text style={sty.errorInline}>
+            {formErrors['userData.email']}
+          </Text>
+        )}
+
+        {/* New Password */}
+        {isEditing && (
+          <>
+            <View style={sty.row}>
+              <Text style={sty.label}>Новий пароль:</Text>
+              <TextInput
+                ref={refs.password}
+                style={[
+                  sty.inputInline,
+                  formErrors['userData.password'] && sty.inputError
+                ]}
+                value={userData.password}
+                onChangeText={t =>
+                  setUserData(prev => ({ ...prev, password: t }))
+                }
+                secureTextEntry
+              />
+            </View>
+            {!!formErrors['userData.password'] && (
+              <Text style={sty.errorInline}>
+                {formErrors['userData.password']}
+              </Text>
+            )}
+          </>
+        )}
+
+        <View style={sty.actionsRow}>
+          <Pressable
+            style={({ pressed }) => [
+              sty.btn,
+              sty.btnPrimary,
+              pressed && sty.btnPrimaryPressed
+            ]}
+            onPress={() => {
+              if (isEditing) handleSaveProfile();
+              else {
+                setIsEditing(true);
+                setUserData(prev => ({ ...prev, password: '' }));
+              }
+            }}
+            disabled={isLoading}
+          >
+            {isLoading && isEditing ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={sty.btnText}>
+                {isEditing ? 'Зберегти' : 'Редагувати'}
+              </Text>
+            )}
+          </Pressable>
+          {isEditing && (
+            <Pressable
+              style={({ pressed }) => [
+                sty.btn,
+                sty.btnSecondary,
+                pressed && sty.btnSecondaryPressed
+              ]}
+              onPress={() => {
+                AsyncStorage.getItem('userData').then(st =>
+                  st && setUserData({ ...JSON.parse(st), password: '' })
+                );
+                setIsEditing(false);
+                setFormErrors({});
+                setAuthMessage({});
+              }}
+            >
+              <Text style={sty.btnText}>Скасувати</Text>
+            </Pressable>
+          )}
+        </View>
+
+        <Text style={sty.subheading}>Адреси</Text>
+        {userData.addresses?.length > 0 ? (
+          userData.addresses.map((a, i) => (
+            <Text key={i} style={sty.addressItem}>
+              {a}
+            </Text>
+          ))
+        ) : (
+          <Text style={sty.value}>Немає адрес.</Text>
+        )}
+
+        <View style={sty.group}>
+          <Text style={sty.label}>Нова адреса:</Text>
+          <TextInput
+            ref={refs.newAddress}
+            style={[sty.input, formErrors.newAddress && sty.inputError]}
+            value={newAddress}
+            onChangeText={setNewAddress}
+            onBlur={() =>
+              setFormErrors(prev =>
+                ({ ...prev, newAddress: validateField('newAddress', newAddress) })
+              )
+            }
+            onFocus={() => setFocused('newAddress')}
+            placeholder="Введіть адресу"
+          />
+          {!!formErrors.newAddress && (
+            <Text style={sty.errorText}>{formErrors.newAddress}</Text>
+          )}
+          <Pressable
+            style={({ pressed }) => [
+              sty.btn,
+              sty.btnSecondary,
+              pressed && sty.btnSecondaryPressed
+            ]}
+            onPress={addAddress}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color={theme.colors.textSecondary} />
+            ) : (
+              <Text style={sty.btnText}>Додати адресу</Text>
+            )}
+          </Pressable>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [
+            sty.btn,
+            sty.btnDanger,
+            pressed && sty.btnDangerPressed
+          ]}
+          onPress={handleLogout}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={sty.btnText}>Вийти</Text>
+          )}
+        </Pressable>
+      </View>
+    );
+
   return (
     <Layout currentRouteName="Profile">
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1 }}>
-        <View style={styles.pageContainer}>
-          {isLoggedIn ? renderProfileForm() : (showLogin ? renderLoginForm() : renderRegistrationForm())}
-        </View>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={sty.scroll}>
+        {isLoggedIn ? renderProfile() : (showLogin ? renderLogin() : renderRegistration())}
       </ScrollView>
     </Layout>
   );
 }
+
+const sty = StyleSheet.create({
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  scroll: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  heading: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  subheading: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 20,
+    marginBottom: 8,
+  },
+  group: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  inputFocused: {
+    borderColor: '#007aff',
+  },
+  inputError: {
+    borderColor: '#d00',
+  },
+  errorText: {
+    color: '#d00',
+    marginTop: 4,
+    fontSize: 12,
+  },
+  btn: {
+    paddingVertical: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  btnPrimary: {
+    backgroundColor: '#007aff',
+  },
+  btnPrimaryPressed: {
+    backgroundColor: '#005bb5',
+  },
+  btnSecondary: {
+    backgroundColor: '#eee',
+  },
+  btnSecondaryPressed: {
+    backgroundColor: '#ccc',
+  },
+  btnDanger: {
+    backgroundColor: '#d00',
+  },
+  btnDangerPressed: {
+    backgroundColor: '#a00',
+  },
+  btnText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  linkToggle: {
+    alignSelf: 'center',
+    marginTop: 8,
+  },
+  linkText: {
+    color: '#007aff',
+  },
+  msgBox: {
+    padding: 8,
+    borderRadius: 6,
+    marginVertical: 8,
+  },
+  msgSuccess: {
+    backgroundColor: '#e6f4ea',
+  },
+  msgError: {
+    backgroundColor: '#fdecea',
+  },
+  msgText: {
+    fontSize: 14,
+  },
+  msgTextSuccess: {
+    color: '#2e7d32',
+  },
+  msgTextError: {
+    color: '#c62828',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  value: {
+    fontSize: 16,
+    flexShrink: 1,
+  },
+  inputInline: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  errorInline: {
+    color: '#d00',
+    marginBottom: 8,
+  },
+  actionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    // gap isn't supported—use margin on child elements instead
+  },
+  addressItem: {
+    fontSize: 14,
+    marginVertical: 4,
+  },
+});

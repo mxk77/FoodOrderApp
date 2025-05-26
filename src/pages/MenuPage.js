@@ -1,26 +1,27 @@
 // src/pages/MenuPage.js
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, ScrollView, FlatList, Pressable, Image } from 'react-native';
+import { View, Text, FlatList, Pressable, Image, StyleSheet } from 'react-native';
 import Layout from '../components/layout/Layout';
 import { useCart } from '../context/CartContext';
 import MENU_ITEMS_DATA from '../data/menuData.js';
-import { styles } from '../styles/MenuPageStyles'; // Or your actual path
+// import { styles } from '../styles/MenuPageStyles';
 
-export default function MenuPage({ navigation }) {
+export default function MenuPage() {
   const { addToCart } = useCart();
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const categories = useMemo(() => {
-    const uniqueCategories = new Set(MENU_ITEMS_DATA.map(item => item.category));
-    return ['All', ...Array.from(uniqueCategories)];
+    const setCat = new Set(MENU_ITEMS_DATA.map(item => item.category));
+    return ['All', ...Array.from(setCat)];
   }, []);
 
-  const filteredItems = useMemo(() => {
-    if (selectedCategory === 'All') {
-      return MENU_ITEMS_DATA;
-    }
-    return MENU_ITEMS_DATA.filter(item => item.category === selectedCategory);
-  }, [selectedCategory]);
+  const filteredItems = useMemo(
+    () =>
+      selectedCategory === 'All'
+        ? MENU_ITEMS_DATA
+        : MENU_ITEMS_DATA.filter(item => item.category === selectedCategory),
+    [selectedCategory]
+  );
 
   const renderCategoryButton = (category) => (
     <Pressable
@@ -31,70 +32,55 @@ export default function MenuPage({ navigation }) {
         selectedCategory === category && styles.categoryButtonActive,
         pressed && selectedCategory !== category && styles.categoryButtonPressed,
       ]}
-      accessibilityRole="button"
-      accessibilityState={{ selected: selectedCategory === category }}
     >
-      {({ pressed }) => (
-        <Text style={[
+      <Text
+        style={[
           styles.categoryButtonText,
           selectedCategory === category && styles.categoryButtonTextActive,
-          pressed && selectedCategory !== category && styles.categoryButtonTextPressed,
-        ]}>
-          {category === 'All' ? 'Всі категорії' : category}
-        </Text>
-      )}
+        ]}
+      >
+        {category === 'All' ? 'Всі категорії' : category}
+      </Text>
     </Pressable>
   );
 
-  const renderMenuItem = useCallback(({ item }) => (
-    <View style={styles.menuCardContainer}>
-      <Pressable
-        style={({ pressed }) => [styles.menuCard, pressed && styles.menuCardPressed]}
-        accessibilityLabel={item.name}
-        accessibilityRole="button"
-      >
-        <View style={styles.imageContainer}>
-          <Image
-            source={item.imagePath}
-            style={styles.image}
-            resizeMode="cover"
-            accessibilityIgnoresInvertColors
-          />
-        </View>
-        <View style={styles.cardBody}>
-          <View>
-            <Text style={styles.cardTitle} numberOfLines={2}>{item.name}</Text>
-            <Text style={styles.cardDescription} numberOfLines={3}>{item.description}</Text>
-          </View>
-          <View style={styles.cardFooter}>
-            <Text style={styles.cardPrice}>{item.price} грн</Text>
-            <Pressable
-              onPress={() => addToCart(item)}
-              style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
-              accessibilityLabel={`Додати ${item.name} до кошика`}
-              accessibilityRole="button"
-            >
-              <Text style={styles.addButtonText}>+</Text>
-            </Pressable>
+  const renderMenuItem = useCallback(
+    ({ item }) => (
+      <View style={styles.menuCardContainer}>
+        <View style={styles.menuCard}>
+          <Image source={item.imagePath} style={styles.image} />
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle} numberOfLines={2}>
+              {item.name}
+            </Text>
+            <Text style={styles.cardDescription} numberOfLines={3}>
+              {item.description}
+            </Text>
+            <View style={styles.cardFooter}>
+              <Text style={styles.cardPrice}>{item.price} грн</Text>
+              <Pressable onPress={() => addToCart(item)} style={styles.addButton}>
+                <Text style={styles.addButtonText}>+</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
-      </Pressable>
-    </View>
-  ), [addToCart]);
+      </View>
+    ),
+    [addToCart]
+  );
 
   const ListHeader = () => (
-    <>
+    <View>
       <Text style={styles.title}>Меню</Text>
-      <View style={styles.categoryFiltersContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryFiltersContentContainer}
-        >
-          {categories.map(renderCategoryButton)}
-        </ScrollView>
-      </View>
-    </>
+      <FlatList
+        horizontal
+        data={categories}
+        renderItem={({ item }) => renderCategoryButton(item)}
+        keyExtractor={(item) => item}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.categoryFiltersContentContainer}
+      />
+    </View>
   );
 
   const ListEmpty = () => (
@@ -104,18 +90,112 @@ export default function MenuPage({ navigation }) {
   );
 
   return (
-    <Layout currentRouteName="Menu">
-      {/* The FlatList is now the primary scrollable element for the page content */}
+    <Layout>
       <FlatList
-        ListHeaderComponent={ListHeader} // Renders title and category filters
+        ListHeaderComponent={ListHeader}
         data={filteredItems}
         renderItem={renderMenuItem}
         keyExtractor={(item) => item.id.toString()}
         numColumns={2}
-        contentContainerStyle={styles.menuGridContainer} // Styles for the grid itself
-        ListEmptyComponent={ListEmpty} // Renders if filteredItems is empty
-        style={styles.pageContainer} // Overall container style for the list area
+        contentContainerStyle={styles.menuGridContainer}
+        ListEmptyComponent={ListEmpty}
       />
     </Layout>
   );
 }
+
+const styles = StyleSheet.create({
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    margin: 16,
+    textAlign: 'center',
+  },
+  categoryFiltersContentContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  categoryButton: {
+    marginHorizontal: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+  },
+  categoryButtonActive: {
+    backgroundColor: '#007aff',
+  },
+  categoryButtonPressed: {
+    backgroundColor: '#d0d0d0',
+  },
+  categoryButtonText: {
+    fontSize: 14,
+    color: '#000',
+  },
+  categoryButtonTextActive: {
+    color: '#fff',
+  },
+  menuGridContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  menuCardContainer: {
+    flex: 1,
+    margin: 8,
+  },
+  menuCard: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    overflow: 'hidden',
+    flex: 1,
+  },
+  image: {
+    width: '100%',
+    height: 120,
+  },
+  cardBody: {
+    padding: 8,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  cardDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cardPrice: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  addButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#007aff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addButtonText: {
+    color: '#fff',
+    fontSize: 20,
+    lineHeight: 20,
+  },
+  noItemsContainer: {
+    alignItems: 'center',
+    marginTop: 50,
+  },
+  noItemsText: {
+    fontSize: 16,
+    color: '#666',
+  },
+});

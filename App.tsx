@@ -1,14 +1,19 @@
-// App.tsx - Modified for your app
 import 'react-native-gesture-handler';
 import React from 'react';
-import AppNavigator from './src/navigation/AppNavigator';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import AppNavigator from './src/navigation/AppNavigator';
 import { CartProvider } from './src/context/CartContext';
 
 export default function App() {
   return (
-    <CartProvider>
-        <AppNavigator />
-    </CartProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <CartProvider>
+          <AppNavigator />
+        </CartProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

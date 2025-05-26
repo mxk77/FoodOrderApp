@@ -1,48 +1,40 @@
-// Footer.js
+// src/components/layout/Footer.js
 import React from 'react';
-import { View, Text, Linking, Pressable, Dimensions } from 'react-native';
-import { staticStyles, getDynamicStyles, themeFonts } from '../../styles/FooterStyles'; // Adjust path if needed
+import { View, Text, Pressable, Linking, SafeAreaView } from 'react-native';
 
 export default function Footer() {
-  const currentYear = new Date().getFullYear();
-  const screenWidth = Dimensions.get('window').width;
+  const year = new Date().getFullYear();
 
-  const handlePhonePress = (phoneNumber) => {
-    Linking.openURL(`tel:${phoneNumber}`);
+  const dial = (number) => {
+    Linking.openURL(`tel:${number}`);
   };
 
-  const isLargeScreen = screenWidth >= 600;
-  const dynamicStyles = getDynamicStyles(isLargeScreen); // Generate dynamic styles
-
   return (
-    <View style={staticStyles.appFooter}>
-      <View style={dynamicStyles.content}>
-        <Text style={[staticStyles.text, dynamicStyles.copyright]}>
-          &copy; {currentYear} FoodDelivery
+    <SafeAreaView
+      style={{
+        backgroundColor: '#fff',
+        borderTopWidth: 1,
+        borderColor: '#eee',
+      }}
+    >
+      <View style={{ padding: 12, alignItems: 'center' }}>
+        <Text style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>
+          © {year} FoodDelivery
         </Text>
-        <View style={dynamicStyles.contacts}>
-          <Pressable onPress={() => handlePhonePress('+380001112233')}>
-            {({ pressed }) => (
-              <Text style={[
-                staticStyles.phoneLink,
-                pressed && staticStyles.phoneLinkHover // Hover style is static in definition
-              ]}>
-                (000) 111-22-33
-              </Text>
-            )}
+
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <Pressable onPress={() => dial('+380001112233')}>
+            <Text style={{ fontSize: 14, color: '#007aff' }}>
+              (000) 111-22-33
+            </Text>
           </Pressable>
-          <Pressable onPress={() => handlePhonePress('+380004445566')}>
-            {({ pressed }) => (
-              <Text style={[
-                staticStyles.phoneLink,
-                pressed && staticStyles.phoneLinkHover
-              ]}>
-                (000) 444-55-66
-              </Text>
-            )}
+          <Pressable onPress={() => dial('+380004445566')}>
+            <Text style={{ fontSize: 14, color: '#007aff' }}>
+              (000) 444-55-66
+            </Text>
           </Pressable>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
