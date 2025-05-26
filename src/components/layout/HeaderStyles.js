@@ -9,15 +9,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: theme.colors.background.card,
-    ...theme.shadows.subtle,
+
+    shadowColor: theme.colors.shadow.color,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 6,
+    elevation: 4,
+
     position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 10,
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
+
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.light,
   },
   logoContainer: {
-
   },
   logoText: {
     fontFamily: theme.fonts.headingsBold,

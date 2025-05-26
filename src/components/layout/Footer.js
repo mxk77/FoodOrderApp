@@ -19,7 +19,7 @@ export default function Footer() {
         </Text>
         <Pressable onPress={dialPrimaryNumber} style={styles.contactPressable}>
           <Text style={styles.contactText}>
-            Зв'язатися з нами: {primaryPhoneNumberDisplay}
+            {primaryPhoneNumberDisplay}
           </Text>
         </Pressable>
       </View>

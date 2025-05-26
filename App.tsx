@@ -5,10 +5,11 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AppNavigator from './src/navigation/AppNavigator';
 import { CartProvider } from './src/context/CartContext';
+import globalStyles from './src/styles/globalStyles';
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={globalStyles.appScreen}>
       <SafeAreaProvider>
         <CartProvider>
           <AppNavigator />

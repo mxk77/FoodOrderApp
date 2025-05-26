@@ -1,5 +1,7 @@
 import { StyleSheet, Platform } from 'react-native';
-import theme from './theme'; // Переконайтесь, що шлях до theme.js правильний
+import theme from './theme';
+
+const HEADER_HEIGHT = 20;
 
 const styles = StyleSheet.create({
   title: {
@@ -7,7 +9,6 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSizes.h1,
     color: theme.colors.text.headings,
     textAlign: 'center',
-    marginTop: theme.spacing.l,
     marginBottom: theme.spacing.l,
   },
   categoryFiltersContentContainer: {
@@ -44,19 +45,21 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSizes.s,
   },
   menuGridContainer: {
-    paddingHorizontal: theme.spacing.m - (theme.spacing.s / 2), // e.g. 16px - 6px = 10px outer padding
+    paddingTop: HEADER_HEIGHT + theme.spacing.l,
+    paddingHorizontal: theme.spacing.m - (theme.spacing.s / 2),
     paddingBottom: theme.spacing.xxl,
+    flexGrow: 1,
   },
   menuCardContainer: {
-    flex: 0.5, // For 2 columns
-    padding: theme.spacing.s / 2, // Creates a gap of theme.spacing.s between cards
+    flex: 0.5,
+    padding: theme.spacing.s / 2,
   },
   menuCard: {
     backgroundColor: theme.colors.background.card,
     borderRadius: theme.borderRadius.l,
     ...theme.shadows.card,
     overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
-    flex: 1, // Ensure card fills its container
+    flex: 1,
     flexDirection: 'column',
   },
   image: {
@@ -68,15 +71,15 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     padding: theme.spacing.m,
-    flex: 1, // Allows cardBody to grow and push footer
+    flex: 1,
     flexDirection: 'column',
   },
   cardTitle: {
     fontFamily: theme.fonts.headingsBold,
     fontSize: theme.fontSizes.l,
-    color: theme.colors.accent.primary, // Using accent for title as per potential preference
+    color: theme.colors.accent.primary,
     marginBottom: theme.spacing.xs,
-    minHeight: theme.fontSizes.l * theme.lineHeights.headings * 2, // Approx 2 lines
+    minHeight: theme.fontSizes.l * theme.lineHeights.headings * 2,
   },
   cardDescription: {
     fontFamily: theme.fonts.primaryRegular,
@@ -84,8 +87,8 @@ const styles = StyleSheet.create({
     color: theme.colors.text.secondary,
     lineHeight: theme.fontSizes.s * theme.lineHeights.body,
     marginBottom: theme.spacing.s,
-    flexGrow: 1, // Takes up available space, pushing footer down
-    minHeight: theme.fontSizes.s * theme.lineHeights.body * 3, // Approx 3 lines
+    flexGrow: 1,
+    minHeight: theme.fontSizes.s * theme.lineHeights.body * 3,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -94,7 +97,6 @@ const styles = StyleSheet.create({
     paddingTop: theme.spacing.s,
     borderTopWidth: 1,
     borderColor: theme.colors.border.light,
-    // marginTop: 'auto'; // Not needed due to flexGrow on description
   },
   cardPrice: {
     fontFamily: theme.fonts.primaryBold,
@@ -103,8 +105,8 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: theme.colors.accent.primary,
-    width: theme.spacing.xl + theme.spacing.xs, // 40px
-    height: theme.spacing.xl + theme.spacing.xs, // 40px
+    width: theme.spacing.xl + theme.spacing.xs,
+    height: theme.spacing.xl + theme.spacing.xs,
     borderRadius: (theme.spacing.xl + theme.spacing.xs) / 2,
     alignItems: 'center',
     justifyContent: 'center',
@@ -112,16 +114,15 @@ const styles = StyleSheet.create({
   },
   addButtonText: {
     color: theme.colors.text.white,
-    fontSize: theme.fontSizes.h4, // Large "+"
+    fontSize: theme.fontSizes.h4,
     fontWeight: 'bold',
-    lineHeight: theme.fontSizes.h4, // For vertical centering
+    lineHeight: theme.fontSizes.h4,
   },
   noItemsContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.l,
-    marginTop: theme.spacing.xl,
   },
   noItemsText: {
     fontFamily: theme.fonts.primaryRegular,

@@ -547,4 +547,4 @@ const renderProfile = () => (
       </ScrollView>
     </Layout>
   );
-});
+}
