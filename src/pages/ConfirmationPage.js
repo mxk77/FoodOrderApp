@@ -11,7 +11,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import Layout from '../components/layout/Layout';
-// import { styles as staticStyles } from '../styles/ConfirmationPageStyles';
+import styles from '../styles/ConfirmationPageStyles';
 import { useCart } from '../context/CartContext';
 
 // Custom radio-button
@@ -299,54 +299,4 @@ export default function ConfirmationPage({ navigation }) {
       </ScrollView>
     </Layout>
   );
-}
-
-const styles = StyleSheet.create({
-  scroll: { padding: 16, paddingBottom: 40 },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' },
-  confirmedContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
-  message: { fontSize: 16, marginVertical: 12, textAlign: 'center' },
-  formGroup: { marginBottom: 16 },
-  label: { fontSize: 14, marginBottom: 4 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  inputFocused: { borderColor: '#007aff' },
-  inputError: { borderColor: '#d00' },
-  error: { color: '#d00', fontSize: 12, marginTop: 4 },
-  radioGroup: { flexDirection: 'row', marginBottom: 8 },
-  radioOption: { flexDirection: 'row', alignItems: 'center', marginRight: 16 },
-  radioCircle: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: '#666',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioCircleSelected: { borderColor: '#007aff' },
-  radioInnerCircle: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#007aff' },
-  radioLabel: { marginLeft: 6, fontSize: 14 },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  submitBtn: {
-    backgroundColor: '#007aff',
-    paddingVertical: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  submitBtnPressed: { backgroundColor: '#005bb5' },
-  submitText: { color: '#fff', fontSize: 16 },
-  backLink: { alignSelf: 'center', paddingVertical: 8 },
-  backLinkText: { fontSize: 14, color: '#007aff' },
 });

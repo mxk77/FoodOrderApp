@@ -1,7 +1,7 @@
-// src/components/layout/Header.js
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useCart } from '../../context/CartContext';
+import styles from './HeaderStyles';
 
 export default function Header({ navigation, currentRouteName = 'Menu' }) {
   const { totalItemCount } = useCart();
@@ -13,43 +13,44 @@ export default function Header({ navigation, currentRouteName = 'Menu' }) {
   const isLinkActive = (route) => route === currentRouteName;
 
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        padding: 12,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        backgroundColor: '#fff',
-      }}
-    >
-      <Pressable onPress={() => navigateTo('Menu')}>
-        <Text style={{ fontSize: 20 }}>🚚 FoodDelivery</Text>
+    <View style={styles.container}>
+      <Pressable onPress={() => navigateTo('Menu')} style={styles.logoContainer}>
+        <Text style={styles.logoText}>🚚 FoodDelivery</Text>
       </Pressable>
 
-      <View style={{ flexDirection: 'row' }}>
+      <View style={styles.navContainer}>
         <Pressable
           onPress={() => navigateTo('Menu')}
-          style={{ marginHorizontal: 8 }}
+          style={styles.navItem}
         >
-          <Text style={{ fontWeight: isLinkActive('Menu') ? 'bold' : 'normal' }}>
+          <Text style={[
+            styles.navText,
+            isLinkActive('Menu') && styles.navTextActive
+          ]}>
             Меню
           </Text>
         </Pressable>
 
         <Pressable
           onPress={() => navigateTo('Cart')}
-          style={{ marginHorizontal: 8 }}
+          style={styles.navItem}
         >
-          <Text style={{ fontWeight: isLinkActive('Cart') ? 'bold' : 'normal' }}>
+          <Text style={[
+            styles.navText,
+            isLinkActive('Cart') && styles.navTextActive
+          ]}>
             Кошик ({totalItemCount})
           </Text>
         </Pressable>
 
         <Pressable
           onPress={() => navigateTo('Profile')}
-          style={{ marginHorizontal: 8 }}
+          style={styles.navItem}
         >
-          <Text style={{ fontWeight: isLinkActive('Profile') ? 'bold' : 'normal' }}>
+          <Text style={[
+            styles.navText,
+            isLinkActive('Profile') && styles.navTextActive
+          ]}>
             Профіль
           </Text>
         </Pressable>

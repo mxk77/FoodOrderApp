@@ -5,7 +5,6 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 
 import Header from './Header';
 import Footer from './Footer';
-// import { styles as layoutLocalStyles } from '../../styles/LayoutStyles';
 
 export default function Layout({ children }) {
   const navigation = useNavigation();

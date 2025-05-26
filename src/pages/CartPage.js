@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
 import Layout from '../components/layout/Layout';
-// import { styles as staticStyles, getDynamicCartStyles } from '../styles/CartPageStyles';
+import styles from '../styles/CartPageStyles';
 import { useCart } from '../context/CartContext';
 
 export default function CartPage({ navigation }) {
@@ -85,104 +85,4 @@ export default function CartPage({ navigation }) {
       </View>
     </Layout>
   );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  empty: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  list: {
-    marginBottom: 12,
-  },
-  cartItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    backgroundColor: '#fff',
-    borderRadius: 6,
-  },
-  cartItemText: {
-    flex: 1,
-    fontSize: 16,
-  },
-  removeBtn: {
-    marginLeft: 12,
-    padding: 4,
-  },
-  removeBtnPressed: {
-    opacity: 0.6,
-  },
-  removeBtnText: {
-    fontSize: 18,
-    color: '#d00',
-  },
-  separator: {
-    height: 8,
-  },
-  total: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'right',
-    marginBottom: 16,
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 24,
-  },
-  button: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  primaryButton: {
-    backgroundColor: '#007aff',
-  },
-  primaryButtonPressed: {
-    backgroundColor: '#005bb5',
-  },
-  primaryButtonText: {
-    color: '#fff',
-  },
-  dangerButton: {
-    backgroundColor: '#d00',
-  },
-  dangerButtonPressed: {
-    backgroundColor: '#a00',
-  },
-  dangerButtonText: {
-    color: '#fff',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  backLink: {
-    alignSelf: 'center',
-    paddingVertical: 8,
-  },
-  backLinkText: {
-    fontSize: 14,
-    color: '#007aff',
-  },
 });

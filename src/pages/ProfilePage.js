@@ -12,7 +12,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sha256 } from 'js-sha256';
 import Layout from '../components/layout/Layout';
-// import { styles } from '../styles/ProfilePageStyles';
+import sty from '../styles/ProfilePageStyles';
 import theme from '../styles/theme';
 
 async function hashPasswordValue(password) {
@@ -286,7 +286,7 @@ export default function ProfilePage({ navigation }) {
         placeholder:"Мін. 4 символи", secure:true, errorKey:'password'
       })}
       <Pressable style={({pressed})=>[sty.btn,sty.btnPrimary, pressed&&sty.btnPrimaryPressed]} onPress={handleRegister} disabled={isLoading}>
-        {isLoading ? <ActivityIndicator color="#fff"/> : <Text style={sty.btnText}>Зареєструватися</Text>}
+        {isLoading ? <ActivityIndicator color="#fff"/> : <Text style={[sty.btnTextBase, sty.btnPrimaryText]}>Зареєструватися</Text>}
       </Pressable>
       <Pressable onPress={()=>{ setShowLogin(true); setFormErrors({}); setAuthMessage({}); }} style={sty.linkToggle}>
         <Text style={sty.linkText}>Уже є акаунт? Увійти</Text>
@@ -313,7 +313,7 @@ export default function ProfilePage({ navigation }) {
         placeholder:"Ваш пароль", secure:true, errorKey:'login.password'
       })}
       <Pressable style={({pressed})=>[sty.btn,sty.btnPrimary, pressed&&sty.btnPrimaryPressed]} onPress={handleLogin} disabled={isLoading}>
-        {isLoading ? <ActivityIndicator color="#fff"/> : <Text style={sty.btnText}>Увійти</Text>}
+        {isLoading ? <ActivityIndicator color="#fff"/> : <Text style={[sty.btnTextBase, sty.btnPrimaryText]}>Увійти</Text>}
       </Pressable>
       <Pressable onPress={()=>{ setShowLogin(false); setFormErrors({}); setAuthMessage({}); }} style={sty.linkToggle}>
         <Text style={sty.linkText}>Немає акаунту? Зареєструватися</Text>
@@ -471,7 +471,7 @@ const renderProfile = () => (
                 setAuthMessage({});
               }}
             >
-              <Text style={sty.btnText}>Скасувати</Text>
+              <Text style={[sty.btnTextBase, sty.btnSecondaryText]}>Скасувати</Text>
             </Pressable>
           )}
         </View>
@@ -534,7 +534,7 @@ const renderProfile = () => (
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={sty.btnText}>Вийти</Text>
+            <Text style={[sty.btnTextBase,sty.btnDangerText]}>Вийти</Text>
           )}
         </Pressable>
       </View>
@@ -547,137 +547,4 @@ const renderProfile = () => (
       </ScrollView>
     </Layout>
   );
-}
-
-const sty = StyleSheet.create({
-  loader: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scroll: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  heading: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-  subheading: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  group: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  inputFocused: {
-    borderColor: '#007aff',
-  },
-  inputError: {
-    borderColor: '#d00',
-  },
-  errorText: {
-    color: '#d00',
-    marginTop: 4,
-    fontSize: 12,
-  },
-  btn: {
-    paddingVertical: 12,
-    borderRadius: 6,
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  btnPrimary: {
-    backgroundColor: '#007aff',
-  },
-  btnPrimaryPressed: {
-    backgroundColor: '#005bb5',
-  },
-  btnSecondary: {
-    backgroundColor: '#eee',
-  },
-  btnSecondaryPressed: {
-    backgroundColor: '#ccc',
-  },
-  btnDanger: {
-    backgroundColor: '#d00',
-  },
-  btnDangerPressed: {
-    backgroundColor: '#a00',
-  },
-  btnText: {
-    color: '#fff',
-    fontSize: 16,
-  },
-  linkToggle: {
-    alignSelf: 'center',
-    marginTop: 8,
-  },
-  linkText: {
-    color: '#007aff',
-  },
-  msgBox: {
-    padding: 8,
-    borderRadius: 6,
-    marginVertical: 8,
-  },
-  msgSuccess: {
-    backgroundColor: '#e6f4ea',
-  },
-  msgError: {
-    backgroundColor: '#fdecea',
-  },
-  msgText: {
-    fontSize: 14,
-  },
-  msgTextSuccess: {
-    color: '#2e7d32',
-  },
-  msgTextError: {
-    color: '#c62828',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  value: {
-    fontSize: 16,
-    flexShrink: 1,
-  },
-  inputInline: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  errorInline: {
-    color: '#d00',
-    marginBottom: 8,
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    // gap isn't supported—use margin on child elements instead
-  },
-  addressItem: {
-    fontSize: 14,
-    marginVertical: 4,
-  },
 });

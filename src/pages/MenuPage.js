@@ -4,7 +4,7 @@ import { View, Text, FlatList, Pressable, Image, StyleSheet } from 'react-native
 import Layout from '../components/layout/Layout';
 import { useCart } from '../context/CartContext';
 import MENU_ITEMS_DATA from '../data/menuData.js';
-// import { styles } from '../styles/MenuPageStyles';
+import styles from '../styles/MenuPageStyles';
 
 export default function MenuPage() {
   const { addToCart } = useCart();
@@ -102,100 +102,4 @@ export default function MenuPage() {
       />
     </Layout>
   );
-}
-
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    margin: 16,
-    textAlign: 'center',
-  },
-  categoryFiltersContentContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  categoryButton: {
-    marginHorizontal: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-  },
-  categoryButtonActive: {
-    backgroundColor: '#007aff',
-  },
-  categoryButtonPressed: {
-    backgroundColor: '#d0d0d0',
-  },
-  categoryButtonText: {
-    fontSize: 14,
-    color: '#000',
-  },
-  categoryButtonTextActive: {
-    color: '#fff',
-  },
-  menuGridContainer: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  menuCardContainer: {
-    flex: 1,
-    margin: 8,
-  },
-  menuCard: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    overflow: 'hidden',
-    flex: 1,
-  },
-  image: {
-    width: '100%',
-    height: 120,
-  },
-  cardBody: {
-    padding: 8,
-    flex: 1,
-    justifyContent: 'space-between',
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  cardDescription: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  cardPrice: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  addButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#007aff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addButtonText: {
-    color: '#fff',
-    fontSize: 20,
-    lineHeight: 20,
-  },
-  noItemsContainer: {
-    alignItems: 'center',
-    marginTop: 50,
-  },
-  noItemsText: {
-    fontSize: 16,
-    color: '#666',
-  },
 });
